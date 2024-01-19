@@ -1,0 +1,180 @@
+#include <bits/stdc++.h>
+
+using namespace std;
+
+// Structure to represent a bank account
+struct BankAccount {
+    string accountNumber;
+    string name;
+    double balance;
+    vector<string> transactions;
+
+    BankAccount(const string& accNum, const string& name, double balance)
+        : accountNumber(accNum), name(name), balance(balance) {}
+
+    void deposit(double amount) {
+        balance += amount;
+        transactions.push_back("Deposit: +" + to_string(amount));
+    }
+
+    bool withdraw(double amount) {
+        if (balance >= amount) {
+            balance -= amount;
+            transactions.push_back("Withdrawal: -" + to_string(amount));
+            return true;
+        } else {
+            transactions.push_back("Withdrawal attempt (Insufficient funds): -" + to_string(amount));
+            return false;
+        }
+    }
+};
+
+// Function to load accounts from a file
+vector<BankAccount> loadAccounts(const string& filename) {
+    vector<BankAccount> accounts;
+    ifstream file(filename);
+
+    if (file.is_open()) {
+        string line;
+        while (getline(file, line)) {
+            stringstream ss(line);
+            string accountNumber, name;
+            double balance;
+            ss >> accountNumber >> name >> balance;
+            accounts.emplace_back(accountNumber, name, balance);
+        }
+
+        file.close();
+    }
+
+    return accounts;
+}
+
+// Function to save accounts to a file
+void saveAccounts(const string& filename, const vector<BankAccount>& accounts) {
+    ofstream file(filename);
+
+    if (file.is_open()) {
+        for (const auto& account : accounts) {
+            file << account.accountNumber << " " << account.name << " " << fixed << setprecision(2) << account.balance << endl;
+        }
+
+        file.close();
+    }
+}
+
+// Function to find an account by account number
+BankAccount* findAccount(vector<BankAccount>& accounts, const string& accountNumber) {
+    for (auto& account : accounts) {
+        if (account.accountNumber == accountNumber) {
+            return &account;
+        }
+    }
+    return nullptr;
+}
+
+// Function to display account details
+void displayAccountDetails(const BankAccount& account) {
+    cout << "Account Number: " << account.accountNumber << endl;
+    cout << "Account Holder: " << account.name << endl;
+    cout << "Balance: $" << fixed << setprecision(2) << account.balance << endl;
+    cout << "Transaction History:" << endl;
+    for (const auto& transaction : account.transactions) {
+        cout << "- " << transaction << endl;
+    }
+}
+
+int main() {
+    const string accountFileName = "accounts.txt";
+    vector<BankAccount> accounts = loadAccounts(accountFileName);
+
+    cout << "Welcome to the Banking System!" << endl;
+
+    while (true) {
+        cout << "\n1. Create Account\n2. Login\n3. Exit\n";
+        int choice;
+        cout << "Enter your choice: ";
+        cin >> choice;
+
+        switch (choice) {
+            case 1: {
+                string accountNumber, name;
+                cout << "Enter account number: ";
+                cin >> accountNumber;
+                cout << "Enter your name: ";
+                cin.ignore(); // Clear newline character from previous input
+                getline(cin, name);
+
+                // Check if the account number is unique
+                if (findAccount(accounts, accountNumber) == nullptr) {
+                    accounts.emplace_back(accountNumber, name, 0.0);
+                    cout << "Account created successfully." << endl;
+                } else {
+                    cout << "Account number already exists. Please choose a unique account number." << endl;
+                }
+                break;
+            }
+            case 2: {
+                string accountNumber, pin;
+                cout << "Enter account number: ";
+                cin >> accountNumber;
+                BankAccount* currentAccount = findAccount(accounts, accountNumber);
+
+                if (currentAccount != nullptr) {
+                    cout << "Enter your PIN: ";
+                    cin >> pin;
+
+
+                    cout << "Login successful." << endl;
+
+                    while (true) {
+                        cout << "\n1. Display Account Details\n2. Deposit\n3. Withdraw\n4. Logout\n";
+                        int innerChoice;
+                        cout << "Enter your choice: ";
+                        cin >> innerChoice;
+
+                        switch (innerChoice) {
+                            case 1:
+                                displayAccountDetails(*currentAccount);
+                                break;
+                            case 2: {
+                                double depositAmount;
+                                cout << "Enter the amount to deposit: $";
+                                cin >> depositAmount;
+                                currentAccount->deposit(depositAmount);
+                                break;
+                            }
+                            case 3: {
+                                double withdrawAmount;
+                                cout << "Enter the amount to withdraw: $";
+                                cin >> withdrawAmount;
+                                currentAccount->withdraw(withdrawAmount);
+                                break;
+                            }
+                            case 4:
+                                cout << "Logout successful." << endl;
+                                break;
+                            default:
+                                cout << "Invalid choice. Try again." << endl;
+                        }
+
+                        if (innerChoice == 4) {
+                            break;
+                        }
+                    }
+                } else {
+                    cout << "Account not found. Please check your account number." << endl;
+                }
+                break;
+            }
+            case 3:
+                saveAccounts(accountFileName, accounts);
+                cout << "Thank you for using the Banking System. Goodbye!" << endl;
+                return 0;
+            default:
+                cout << "Invalid choice. Try again." << endl;
+        }
+    }
+
+    return 0;
+}
